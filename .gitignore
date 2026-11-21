@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+*.FCStd1
+
+outputs/
+
+primeira_caixa-Caixa.stl
+primeira_caixa.FCStd
