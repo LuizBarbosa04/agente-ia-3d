@@ -9,9 +9,6 @@ import Part
 import Mesh
 
 
-diretorio = Path(__file__).resolve().parent.parent
-caminho_json = diretorio / "parametros_caixa.json"
-
 destino = os.environ.get("AGENTE_3D_OUTPUT")
 
 if not destino:
@@ -21,6 +18,13 @@ saida = Path(destino).resolve()
 
 if not saida.is_dir():
     raise FileNotFoundError("Diretório de saída não encontrado.")
+
+caminho_json = saida / "parametros.json"
+
+if not caminho_json.is_file():
+    raise FileNotFoundError(
+        "Arquivo de parâmetros do projeto não encontrado."
+    )
 
 arquivo_fcstd = saida / "modelo.FCStd"
 arquivo_stl = saida / "modelo.stl"

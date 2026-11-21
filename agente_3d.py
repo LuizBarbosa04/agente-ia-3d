@@ -1,6 +1,4 @@
 
-from pathlib import Path
-
 from ollama import Client
 from pydantic import ValidationError
 
@@ -83,7 +81,9 @@ def completar_parametros(interpretacao: CaixaInterpretacao) -> dict:
                     if not 0 < valor <= (
                         250 if campo == "altura" else 220
                     ):
-                        print("Informe uma medida positiva dentro do limite.")
+                        print(
+                            "Informe uma medida positiva dentro do limite."
+                        )
                         continue
 
                     dados[campo] = valor
@@ -152,15 +152,6 @@ def main():
         conteudo_json = parametros.model_dump_json(indent=2)
 
         (caminho_projeto / "parametros.json").write_text(
-            conteudo_json,
-            encoding="utf-8"
-        )
-
-        caminho_json = (
-            Path(__file__).resolve().parent / "parametros_caixa.json"
-        )
-
-        caminho_json.write_text(
             conteudo_json,
             encoding="utf-8"
         )
