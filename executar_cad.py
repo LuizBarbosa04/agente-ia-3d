@@ -1,4 +1,5 @@
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -10,41 +11,41 @@ FREECAD = Path(
 )
 
 SCRIPT = DIRETORIO / "cad" / "gerar_caixa.py"
-SAIDA = DIRETORIO / "outputs"
 
 
-def executar_cad():
+def executar_cad(caminho_projeto: Path):
+    caminho_projeto = Path(caminho_projeto).resolve()
+
     if not FREECAD.is_file():
         raise FileNotFoundError("FreeCADCmd não encontrado.")
 
     if not SCRIPT.is_file():
         raise FileNotFoundError("Script CAD não encontrado.")
 
+    if not caminho_projeto.is_dir():
+        raise FileNotFoundError(
+            f"Diretório do projeto não encontrado: {caminho_projeto}"
+        )
+
     arquivos = [
-        SAIDA / "caixa_json.FCStd",
-        SAIDA / "caixa_json.stl"
+        caminho_projeto / "modelo.FCStd",
+        caminho_projeto / "modelo.stl"
     ]
 
-    existentes = [arquivo for arquivo in arquivos if arquivo.exists()]
+    if any(arquivo.exists() for arquivo in arquivos):
+        raise FileExistsError(
+            "O diretório já contém arquivos CAD. "
+            "Utilize um diretório exclusivo para cada geração."
+        )
 
-    if existentes:
-        versao = 1
-
-        while any(
-            (SAIDA / f"caixa_json_v{versao}{arquivo.suffix}").exists()
-            for arquivo in arquivos
-        ):
-            versao += 1
-
-        for arquivo in existentes:
-            destino = SAIDA / f"caixa_json_v{versao}{arquivo.suffix}"
-            arquivo.rename(destino)
-            print(f"Versão anterior preservada: {destino.name}")
+    ambiente = os.environ.copy()
+    ambiente["AGENTE_3D_OUTPUT"] = str(caminho_projeto)
 
     try:
         resultado = subprocess.run(
             [str(FREECAD), str(SCRIPT)],
             cwd=str(DIRETORIO),
+            env=ambiente,
             capture_output=True,
             text=True,
             errors="replace",
@@ -77,6 +78,4 @@ def executar_cad():
     print("Automação CAD concluída.")
     print("Arquivos verificados com sucesso.")
 
-
-if __name__ == "__main__":
-    executar_cad()
+    return arquivos

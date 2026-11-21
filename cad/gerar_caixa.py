@@ -1,6 +1,7 @@
 
 import json
 import math
+import os
 from pathlib import Path
 
 import FreeCAD
@@ -10,7 +11,24 @@ import Mesh
 
 diretorio = Path(__file__).resolve().parent.parent
 caminho_json = diretorio / "parametros_caixa.json"
-saida = diretorio / "outputs"
+
+destino = os.environ.get("AGENTE_3D_OUTPUT")
+
+if not destino:
+    raise RuntimeError("Diretório de saída não informado.")
+
+saida = Path(destino).resolve()
+
+if not saida.is_dir():
+    raise FileNotFoundError("Diretório de saída não encontrado.")
+
+arquivo_fcstd = saida / "modelo.FCStd"
+arquivo_stl = saida / "modelo.stl"
+
+if arquivo_fcstd.exists() or arquivo_stl.exists():
+    raise FileExistsError(
+        "O diretório já contém arquivos CAD."
+    )
 
 with caminho_json.open("r", encoding="utf-8") as arquivo:
     parametros = json.load(arquivo)
@@ -75,26 +93,26 @@ if geometria.isNull() or not geometria.isValid():
 if len(geometria.Solids) != 1:
     raise ValueError("A geometria não possui exatamente um sólido.")
 
-saida.mkdir(parents=True, exist_ok=True)
-
 documento = FreeCAD.newDocument("CaixaJSON")
 
-objeto = documento.addObject("PartDesign::Feature", "Caixa")
-objeto.Shape = geometria
+try:
+    objeto = documento.addObject("PartDesign::Feature", "Caixa")
+    objeto.Shape = geometria
 
-documento.recompute()
+    documento.recompute()
 
-documento.saveAs(str(saida / "caixa_json.FCStd"))
+    documento.saveAs(str(arquivo_fcstd))
 
-Mesh.export(
-    [objeto],
-    str(saida / "caixa_json.stl")
-)
+    Mesh.export(
+        [objeto],
+        str(arquivo_stl)
+    )
 
-print("Modelo gerado com sucesso.")
-print(f"Dimensões: {comprimento} x {largura} x {altura} mm")
-print(f"Espessura: {espessura} mm")
-print(f"Volume: {geometria.Volume:.2f} mm³")
-print(f"Arquivos salvos em: {saida}")
+    print("Modelo gerado com sucesso.")
+    print(f"Dimensões: {comprimento} x {largura} x {altura} mm")
+    print(f"Espessura: {espessura} mm")
+    print(f"Volume: {geometria.Volume:.2f} mm³")
+    print(f"Arquivos salvos em: {saida}")
 
-FreeCAD.closeDocument(documento.Name)
+finally:
+    FreeCAD.closeDocument(documento.Name)

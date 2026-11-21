@@ -5,6 +5,7 @@ from ollama import Client
 from pydantic import ValidationError
 
 from executar_cad import executar_cad
+from gerenciador_projetos import criar_diretorio_projeto
 from models import CaixaInterpretacao, CaixaParametros
 
 
@@ -145,25 +146,36 @@ def main():
         print("Operação cancelada.")
         return
 
-    caminho_json = (
-        Path(__file__).resolve().parent / "parametros_caixa.json"
-    )
-
-    caminho_json.write_text(
-        parametros.model_dump_json(indent=2),
-        encoding="utf-8"
-    )
-
-    print("\nIniciando geração do modelo 3D...")
-
     try:
-        executar_cad()
+        caminho_projeto = criar_diretorio_projeto(parametros.tipo)
+
+        conteudo_json = parametros.model_dump_json(indent=2)
+
+        (caminho_projeto / "parametros.json").write_text(
+            conteudo_json,
+            encoding="utf-8"
+        )
+
+        caminho_json = (
+            Path(__file__).resolve().parent / "parametros_caixa.json"
+        )
+
+        caminho_json.write_text(
+            conteudo_json,
+            encoding="utf-8"
+        )
+
+        print(f"\nProjeto criado em: {caminho_projeto}")
+        print("Iniciando geração do modelo 3D...")
+
+        executar_cad(caminho_projeto)
 
     except (OSError, RuntimeError, ValueError) as erro:
         print(f"Falha na geração CAD: {erro}")
         return
 
     print("\nModelo 3D gerado com sucesso!")
+    print(f"Arquivos disponíveis em: {caminho_projeto}")
 
 
 if __name__ == "__main__":
